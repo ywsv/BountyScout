@@ -57,28 +57,53 @@ def search_github(query, token=None):
         return {}
 
 def is_clean_candidate(item):
-    """Triage logic to filter out noisy, assigned, closed, or spam tasks."""
-    # 1. Skip if already a Pull Request
-    if "pull_request" in item:
-        return False
-    # 2. Skip if already assigned
-    if item.get("assignees"):
-        return False
-    # 3. Skip if thread is overcrowded (highly competitive)
-    if int(item.get("comments", 0)) > MAX_COMMENTS:
-        return False
-    
     title = str(item.get("title", "")).lower()
     body = str(item.get("body", "")).lower()
-    
-    # 4. Skip cryptocurrency/article writing/spam keywords
+
+    labels = {
+        str(label.get("name", "")).lower()
+        for label in item.get("labels", [])
+    }
+
+    repository_url = str(item.get("repository_url", "")).lower()
+
+    # 防止扫描到自己或其他 BountyScout 的告警
+    if "bounty-alert" in labels:
+        return False
+
+    if "bountyscout" in repository_url:
+        return False
+
+    if title.startswith("🎯 bounty alert") or title.startswith("bounty alert"):
+        return False
+
+    if "active bounty scan results" in body:
+        return False
+
+    if "pull_request" in item:
+        return False
+
+    if item.get("assignees"):
+        return False
+
+    if int(item.get("comments", 0)) > MAX_COMMENTS:
+        return False
+
     blocklist = [
-        "airdrop", "referral", "casino", "gambling", "trading bot", 
-        "blog post", "article writing", "tutorial proposal", "content creator"
+        "airdrop",
+        "referral",
+        "casino",
+        "gambling",
+        "trading bot",
+        "blog post",
+        "article writing",
+        "tutorial proposal",
+        "content creator",
     ]
+
     if any(term in title or term in body for term in blocklist):
         return False
-        
+
     return True
 
 def send_telegram_notification(token, chat_id, message):

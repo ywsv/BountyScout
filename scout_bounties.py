@@ -234,8 +234,10 @@ def main():
         discord_msg = notification_msg.replace("•", "-")
         send_discord_notification(discord_webhook, discord_msg)
 
+    enable_github_issue = (os.environ.get("ENABLE_GITHUB_ISSUE", "false").lower() == "true")
+    
     # Method C: GitHub Issue (Built-in, zero configuration)
-    if github_token and repo_fullname:
+    if github_token and repo_fullname and enable_github_issue:
         issue_title = f"🎯 Bounty Alert: {len(new_bounties)} New Opportunity{'ies' if len(new_bounties) > 1 else ''} found"
         issue_body = (
             f"### Active Bounty Scan Results\n\n"
